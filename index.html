@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Italy Plan 🏔</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root { --gold:#C9A96E; --blue:#7BA8C9; --red:#C0604A; }
+body {
+  background: #111;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 300;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* ── HERO ── */
+.hero {
+  position: relative; height: 220px; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: flex-end; padding: 18px;
+}
+.hero-bg {
+  position: absolute; inset: 0;
+  background-image: url('https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=800&q=80');
+  background-size: cover; background-position: center 40%; filter: brightness(0.5);
+}
+.hero-bg::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(17,17,17,0.92) 0%, transparent 60%);
+}
+.hero-content { position: relative; }
+.hero-eyebrow { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-bottom: 5px; }
+.hero h1 { font-family: 'Cormorant Garamond', serif; font-size: 40px; font-weight: 300; line-height: 1; letter-spacing: -0.02em; }
+.hero h1 em { font-style: italic; color: var(--gold); }
+.hero-stats { display: flex; gap: 18px; margin-top: 10px; }
+.stat { display: flex; flex-direction: column; }
+.stat-val { font-family: 'Cormorant Garamond', serif; font-size: 19px; line-height: 1; color: var(--gold); }
+.stat-lbl { font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.5; }
+
+/* ── NAV ── */
+.nav {
+  position: sticky; top: 0; z-index: 100; background: #111;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 4px;
+}
+.nav::-webkit-scrollbar { display: none; }
+.nav-tab {
+  flex-shrink: 0; padding: 10px 11px; font-size: 10px; letter-spacing: 0.05em;
+  text-transform: uppercase; color: rgba(255,255,255,0.38); cursor: pointer;
+  border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s;
+}
+.nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* ── REGION LABEL ── */
+.region-label {
+  padding: 18px 14px 7px; font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: rgba(255,255,255,0.3); display: flex; align-items: center; gap: 8px;
+}
+.region-label::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.07); }
+
+/* ── CARD ── */
+.card {
+  margin: 0 10px 10px; border-radius: 10px; overflow: hidden;
+  background: #1C1A18; border: 1px solid rgba(255,255,255,0.06);
+}
+.card-img { position: relative; height: 105px; overflow: hidden; }
+.card-img img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  filter: brightness(0.72); transition: transform 0.5s ease;
+}
+.card:hover .card-img img { transform: scale(1.04); }
+.card-img::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(28,26,24,1) 0%, rgba(28,26,24,0.2) 50%, transparent 100%);
+}
+.card-img-overlay {
+  position: absolute; bottom: 9px; left: 12px; right: 12px;
+  display: flex; align-items: flex-end; justify-content: space-between;
+}
+.card-city { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 300; line-height: 1; position: relative; }
+.card-nights { font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); position: relative; text-align: right; line-height: 1.5; }
+.card-hotel { padding: 7px 12px; font-size: 11px; color: rgba(255,255,255,0.35); border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; gap: 5px; align-items: center; }
+
+/* ── STRIPE ── */
+.stripe { height: 3px; }
+.s-lake     { background: linear-gradient(90deg,#3A7CA5,#5BB5C8); }
+.s-coast    { background: linear-gradient(90deg,#2E86AB,#4EC9B0); }
+.s-tuscany  { background: linear-gradient(90deg,#A64B2A,#C47A5A); }
+.s-florence { background: linear-gradient(90deg,#8C3A2A,#A85A45); opacity:.7; }
+.s-venice   { background: linear-gradient(90deg,#553C7B,#8B7BAF); }
+.s-dolomite { background: linear-gradient(90deg,#3A6B47,#6B9C6E); }
+.s-siusi    { background: linear-gradient(90deg,#2E5A3A,#5B8C6E); opacity:.65; }
+.s-milan    { background: linear-gradient(90deg,#9A7B3A,#C9A96E); }
+
+/* ── DAY ROWS ── */
+.day {
+  display: grid; grid-template-columns: 66px 1fr 34px;
+  border-bottom: 1px solid rgba(255,255,255,0.045);
+}
+.day:last-child { border-bottom: none; }
+.day.transit { background: rgba(123,168,201,0.04); }
+
+.day-date {
+  padding: 9px 0 9px 12px; display: flex; flex-direction: column; gap: 1px;
+  border-right: 1px solid rgba(255,255,255,0.05);
+}
+.day.transit .day-date { border-right-color: rgba(123,168,201,0.15); }
+.day-dow { font-size: 9px; letter-spacing: 0.07em; text-transform: uppercase; opacity: 0.32; }
+.day-d { font-family: 'Cormorant Garamond', serif; font-size: 15px; line-height: 1; color: rgba(255,255,255,0.82); }
+.day-m { font-size: 9px; opacity: 0.36; }
+
+.day-body { padding: 9px 8px 9px 12px; line-height: 1.55; color: rgba(255,255,255,0.75); }
+.t { color: var(--blue); }
+.n { display: block; font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 2px; font-style: italic; }
+
+/* ── MAP BUTTON ── */
+.day-map {
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.2); font-size: 14px; text-decoration: none;
+  border-left: 1px solid rgba(255,255,255,0.04);
+  transition: all 0.2s; cursor: pointer;
+}
+.day-map:hover { color: var(--gold); background: rgba(201,169,110,0.06); }
+
+/* ── FOOTER ── */
+.footer { text-align: center; padding: 22px 16px; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.18); }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Italy · May – June 2025</div>
+    <h1>La <em>Dolce</em> Italia</h1>
+    <div class="hero-stats">
+      <div class="stat"><span class="stat-val">24</span><span class="stat-lbl">คืน</span></div>
+      <div class="stat"><span class="stat-val">9</span><span class="stat-lbl">เมือง</span></div>
+      <div class="stat"><span class="stat-val">18 พ.ค.</span><span class="stat-lbl">ออกเดินทาง</span></div>
+      <div class="stat"><span class="stat-val">10 มิ.ย.</span><span class="stat-lbl">กลับบ้าน</span></div>
+    </div>
+  </div>
+</div>
+
+<nav class="nav">
+  <div class="nav-tab active" onclick="goTo('lake',this)">🌊 Como</div>
+  <div class="nav-tab" onclick="goTo('coast',this)">🐟 Cinque Terre</div>
+  <div class="nav-tab" onclick="goTo('tuscany',this)">🍷 Tuscany</div>
+  <div class="nav-tab" onclick="goTo('venice',this)">🛶 Venice</div>
+  <div class="nav-tab" onclick="goTo('dolomite',this)">🏔 Dolomites</div>
+  <div class="nav-tab" onclick="goTo('milan',this)">🏙 Milan</div>
+</nav>
+
+<!-- ══ COMO ══ -->
+<div class="region-label" id="lake">🌊 Lake Como · 2 คืน</div>
+<div class="card">
+  <div class="stripe s-lake"></div>
+  <div class="card-img">
+    <img src="https://images.unsplash.com/photo-1599472795404-3a2c47fc4656?w=800&q=75" alt="Lake Como" loading="lazy">
+    <div class="card-img-overlay">
+      <span class="card-city">Lake Como</span>
+      <span class="card-nights">2 คืน · 18–19 พ.ค.</span>
+    </div>
+  </div>
+  <div class="card-hotel">🏡 Entire rental unit in Ossuccio</div>
+  <div class="day transit">
+    <div class="day-date"><span class="day-dow">จ.</span><span class="day-d">18</span><span class="day-m">พ.ค.</span></div>
+    <div class="day-body">✈️ <span class="t">เดินทางถึง → Como</span><span class="n">เช็คอิน 16:00</span></div>
+    <a class="day-map" href="italy-day-map.html?d=0" title="ดูแผนที่">🗺</a>
+  </div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">อ.</span><span class="day-d">19</span><span class="day-m">พ.ค.</span></div>
+    <div class="day-body">เที่ยวเมือง Como</div>
+    <a class="day-map" href="italy-day-map.html?d=1" title="ดูแผนที่">🗺</a>
+  </div>
+</div>
+
+<!-- ══ CINQUE TERRE ══ -->
+<div class="region-label" id="coast">🐟 Italian Riviera · 3 คืน</div>
+<div class="card">
+  <div class="stripe s-coast"></div>
+  <div class="card-img">
+    <img src="https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=800&q=75" alt="Cinque Terre" loading="lazy">
+    <div class="card-img-overlay">
+      <span class="card-city">Monterosso al Mare</span>
+      <span class="card-nights">3 คืน · 20–22 พ.ค.</span>
+    </div>
+  </div>
+  <div class="card-hotel">🏨 Villa Cristina</div>
+  <div class="day transit">
+    <div class="day-date"><span class="day-dow">พ.</span><span class="day-d">20</span><span class="day-m">พ.ค.</span></div>
+    <div class="day-body"><span class="t">Como → Genoa → Monterosso</span><span class="n">เช็คอิน 14:00</span></div>
+    <a class="day-map" href="italy-day-map.html?d=2" title="ดูแผนที่">🗺</a>
+  </div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">พฤ.</span><span class="day-d">21</span><span class="day-m">พ.ค.</span></div>
+    <div class="day-body">Day trip: Rapallo · Portofino</div>
+    <a class="day-map" href="italy-day-map.html?d=3" title="ดูแผนที่">🗺</a>
+  </div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">ศ.</span><span class="day-d">22</span><span class="day-m">พ.ค.</span></div>
+    <div class="day-body">Cinque Terre ครบ 5 หมู่บ้าน</div>
+    <a class="day-map" href="italy-day-map.html?d=4" title="ดูแผนที่">🗺</a>
+  </div>
+</div>
+
+<!-- ══ TUSCANY ══ -->
+<div class="region-label" id="tuscany">🍷 Tuscany · 5 คืน</div>
+<div class="card">
+  <div class="stripe s-tuscany"></div>
+  <div class="card-img">
+    <img src="https://images.unsplash.com/photo-1543429258-56e03b734774?w=800&q=75" alt="Siena Tuscany" loading="lazy">
+    <div class="card-img-overlay">
+      <span class="card-city">Siena · Castelnuovo</span>
+      <span class="card-nights">3 คืน · 23–25 พ.ค.</span>
+    </div>
+  </div>
+  <div class="card-hotel">🏡 Il Borghetto - La Bottega</div>
+  <div class="day transit">
+    <div class="day-date"><span class="day-dow">ส.</span><span class="day-d">23</span><span class="day-m">พ.ค.</span></div>
+    <div class="day-body"><span class="t">Cinque Terre → Siena</span> (~16:00)<span class="n">แวะเที่ยวในตัวเมือง Siena ก่อนเช็คอิน</span></div>
+    <a class="day-map" href="italy-day-map.html?d=5" title="ดูแผนที่">🗺</a>
+  </div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">อา.</span><span class="day-d">24</span><span class="day-m">พ.ค.</span></div>
+    <div class="day-body">Fortezza Montalcino · ทัวร์ไร่ไวน์</div>
+    <a class="day-map" href="italy-day-map.html?d=6" title="ดูแผนที่">🗺</a>
+  </div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">จ.</span><span class="day-d">25</span><span class="day-m">พ.ค.</span></div>
+    <div class="day-body">พักหรือเที่ยวแถว Castelnuovo</div>
+    <a class="day-map" href="italy-day-map.html?d=7" title="ดูแผนที่">🗺</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="stripe s-florence"></div>
+  <div class="card-img">
+    <img src="https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=800&q=75" alt="Florence" loading="lazy">
+    <div class="card-img-overlay">
+      <span class="card-city">Florence</span>
+      <span class="card-nights">2 คืน · 26–27 พ.ค.</span>
+    </div>
+  </div>
+  <div class="card-hotel">🏨 A casa dei nonni 35</div>
+  <div class="day transit">
+    <div class="day-date"><span class="day-dow">อ.</span><span class="day-d">26</span><span class="day-m">พ.ค.</span></div>
+    <div class="day-body">Check out → <span class="t">Day trip Civita</span> → <span class="t">Florence</span><span class="n">อาจเที่ยว Florence ตอนเย็น–ค่ำได้</span></div>
+    <a class="day-map" href="italy-day-map.html?d=8" title="ดูแผนที่">🗺</a>
+  </div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">พ.</span><span class="day-d">27</span><span class="day-m">พ.ค.</span></div>
+    <div class="day-body">เที่ยว Florence ช่วงเช้า (check out 10:00)</div>
+    <a class="day-map" href="italy-day-map.html?d=9" title="ดูแผนที่">🗺</a>
+  </div>
+</div>
+
+<!-- ══ VENICE ══ -->
+<div class="region-label" id="venice">🛶 Venice · 1 คืน</div>
+<div class="card">
+  <div class="stripe s-venice"></div>
+  <div class="card-img">
+    <img src="https://images.unsplash.com/photo-1514890547357-a9ee288728e0?w=800&q=75" alt="Venice" loading="lazy">
+    <div class="card-img-overlay">
+      <span class="card-city">Venice</span>
+      <span class="card-nights">1 คืน · 27 พ.ค.</span>
+    </div>
+  </div>
+  <div class="card-hotel">⛺ hu Venezia camping in town</div>
+  <div class="day transit">
+    <div class="day-date"><span class="day-dow">พ.</span><span class="day-d">27</span><span class="day-m">พ.ค.</span></div>
+    <div class="day-body"><span class="t">Florence → Bologna</span> แวะเที่ยว → <span class="t">Venice</span> เช็คอิน · เที่ยวตอนเย็น</div>
+    <a class="day-map" href="italy-day-map.html?d=9" title="ดูแผนที่">🗺</a>
+  </div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">พฤ.</span><span class="day-d">28</span><span class="day-m">พ.ค.</span></div>
+    <div class="day-body">เที่ยว Venice เก็บตกช่วงเช้าก่อนออกเดินทาง</div>
+    <a class="day-map" href="italy-day-map.html?d=10" title="ดูแผนที่">🗺</a>
+  </div>
+</div>
+
+<!-- ══ DOLOMITES ══ -->
+<div class="region-label" id="dolomite">🏔 Dolomites · 10 คืน</div>
+<div class="card">
+  <div class="stripe s-dolomite"></div>
+  <div class="card-img">
+    <img src="https://images.unsplash.com/photo-1605649461784-6a8e1fb4a19b?w=800&q=75" alt="Cortina Dolomites" loading="lazy">
+    <div class="card-img-overlay">
+      <span class="card-city">Cortina d'Ampezzo</span>
+      <span class="card-nights">4 คืน · 28–31 พ.ค.</span>
+    </div>
+  </div>
+  <div class="card-hotel">🏡 Piccolo Chalet con Camino e Vista Dolomiti</div>
+  <div class="day transit">
+    <div class="day-date"><span class="day-dow">พฤ.</span><span class="day-d">28</span><span class="day-m">พ.ค.</span></div>
+    <div class="day-body"><span class="t">Venice → Cortina</span> · เที่ยวตัวเมือง<span class="n">เช็คอิน 15:00</span></div>
+    <a class="day-map" href="italy-day-map.html?d=10" title="ดูแผนที่">🗺</a>
+  </div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">ศ.</span><span class="day-d">29</span><span class="day-m">พ.ค.</span></div>
+    <div class="day-body">Tre Cime di Lavaredo</div>
+    <a class="day-map" href="italy-day-map.html?d=11" title="ดูแผนที่">🗺</a>
+  </div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">ส.</span><span class="day-d">30</span><span class="day-m">พ.ค.</span></div>
+    <div class="day-body">Lake Misurina · Cadini</div>
+    <a class="day-map" href="italy-day-map.html?d=12" title="ดูแผนที่">🗺</a>
+  </div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">อา.</span><span class="day-d">31</span><span class="day-m">พ.ค.</span></div>
+    <div class="day-body">Lake Braies · Hike Lake Sorapis</div>
+    <a class="day-map" href="italy-day-map.html?d=13" title="ดูแผนที่">🗺</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="stripe s-dolomite" style="opacity:.7"></div>
+  <div class="card-img">
+    <img src="https://images.unsplash.com/photo-1531400060-1db5a3e3c6d1?w=800&q=75" alt="Ortisei" loading="lazy">
+    <div class="card-img-overlay">
+      <span class="card-city">Ortisei</span>
+      <span class="card-nights">3 คืน · 1–3 มิ.ย.</span>
+    </div>
+  </div>
+  <div class="card-hotel">🏡 305a Apartments No 10</div>
+  <div class="day transit">
+    <div class="day-date"><span class="day-dow">จ.</span><span class="day-d">1</span><span class="day-m">มิ.ย.</span></div>
+    <div class="day-body"><span class="t">Cinque Torri → Ortisei</span><span class="n">เช็คอิน 15:00</span></div>
+    <a class="day-map" href="italy-day-map.html?d=14" title="ดูแผนที่">🗺</a>
+  </div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">อ.</span><span class="day-d">2</span><span class="day-m">มิ.ย.</span></div>
+    <div class="day-body">พักหรือวันสำรอง</div>
+    <a class="day-map" href="italy-day-map.html?d=15" title="ดูแผนที่">🗺</a>
+  </div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">พ.</span><span class="day-d">3</span><span class="day-m">มิ.ย.</span></div>
+    <div class="day-body">Alpe di Siusi</div>
+    <a class="day-map" href="italy-day-map.html?d=16" title="ดูแผนที่">🗺</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="stripe s-siusi"></div>
+  <div class="card-img">
+    <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=75" alt="Alpe di Siusi" loading="lazy">
+    <div class="card-img-overlay">
+      <span class="card-city">Alpe di Siusi</span>
+      <span class="card-nights">2 คืน · 4–5 มิ.ย.</span>
+    </div>
+  </div>
+  <div class="card-hotel">🏨 ICARO</div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">พฤ.</span><span class="day-d">4</span><span class="day-m">มิ.ย.</span></div>
+    <div class="day-body">Seceda<span class="n">เช็คอิน 15:00</span></div>
+    <a class="day-map" href="italy-day-map.html?d=17" title="ดูแผนที่">🗺</a>
+  </div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">ศ.</span><span class="day-d">5</span><span class="day-m">มิ.ย.</span></div>
+    <div class="day-body">Dolomite Cinema</div>
+    <a class="day-map" href="italy-day-map.html?d=18" title="ดูแผนที่">🗺</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="stripe s-dolomite" style="opacity:.4"></div>
+  <div class="card-img">
+    <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=75" alt="Sassolungo" loading="lazy">
+    <div class="card-img-overlay">
+      <span class="card-city">Ortisei · คืนสุดท้าย</span>
+      <span class="card-nights">1 คืน · 6 มิ.ย.</span>
+    </div>
+  </div>
+  <div class="card-hotel">🏨 Cristallo B&B</div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">ส.</span><span class="day-d">6</span><span class="day-m">มิ.ย.</span></div>
+    <div class="day-body">Sassolungo</div>
+    <a class="day-map" href="italy-day-map.html?d=19" title="ดูแผนที่">🗺</a>
+  </div>
+</div>
+
+<!-- ══ MILAN ══ -->
+<div class="region-label" id="milan">🏙 Milan · 3 คืน · ปิดทริป</div>
+<div class="card">
+  <div class="stripe s-milan"></div>
+  <div class="card-img">
+    <img src="https://images.unsplash.com/photo-1520175480921-4edfa2983e0f?w=800&q=75" alt="Milan Duomo" loading="lazy">
+    <div class="card-img-overlay">
+      <span class="card-city">Milan</span>
+      <span class="card-nights">3 คืน · 7–9 มิ.ย.</span>
+    </div>
+  </div>
+  <div class="card-hotel">🏨 View Luxury Duomo</div>
+  <div class="day transit">
+    <div class="day-date"><span class="day-dow">อา.</span><span class="day-d">7</span><span class="day-m">มิ.ย.</span></div>
+    <div class="day-body"><span class="t">→ Milan</span> เช็คอิน</div>
+    <a class="day-map" href="italy-day-map.html?d=20" title="ดูแผนที่">🗺</a>
+  </div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">จ.</span><span class="day-d">8</span><span class="day-m">มิ.ย.</span></div>
+    <div class="day-body">เที่ยว Milan</div>
+    <a class="day-map" href="italy-day-map.html?d=21" title="ดูแผนที่">🗺</a>
+  </div>
+  <div class="day">
+    <div class="day-date"><span class="day-dow">อ.</span><span class="day-d">9</span><span class="day-m">มิ.ย.</span></div>
+    <div class="day-body">เที่ยว Milan</div>
+    <a class="day-map" href="italy-day-map.html?d=22" title="ดูแผนที่">🗺</a>
+  </div>
+  <div class="day transit">
+    <div class="day-date"><span class="day-dow">พ.</span><span class="day-d">10</span><span class="day-m">มิ.ย.</span></div>
+    <div class="day-body">✈️ เดินทางกลับ · สิ้นสุดทริป</div>
+    <a class="day-map" href="italy-day-map.html?d=23" title="ดูแผนที่">🗺</a>
+  </div>
+</div>
+
+<div class="footer">Italy Plan 🏔 · 18 May – 10 June 2025</div>
+
+<script>
+function goTo(id, el) {
+  document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+const ids = ['lake','coast','tuscany','venice','dolomite','milan'];
+const tabs = document.querySelectorAll('.nav-tab');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const i = ids.indexOf(e.target.id);
+      if (i >= 0) { tabs.forEach(t => t.classList.remove('active')); tabs[i].classList.add('active'); }
+    }
+  });
+}, { rootMargin: '-30% 0px -60% 0px' });
+ids.forEach(id => { const el = document.getElementById(id); if(el) obs.observe(el); });
+</script>
+</body>
+</html>

@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Italy Day Map</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<!-- Leaflet MUST be in <head> with no defer/async so L is ready before any script runs -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--gold:#C9A96E;--blue:#7BA8C9;--red:#C0604A;--green:#4EC9B0;}
+body{background:#111;color:#fff;font-family:'DM Sans',sans-serif;font-weight:300;
+  max-width:480px;margin:0 auto;display:flex;flex-direction:column;height:100dvh;overflow:hidden;}
+
+.topbar{display:flex;align-items:center;padding:0 10px;height:50px;
+  background:#111;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0;gap:6px;}
+.back{font-size:10px;letter-spacing:0.06em;text-transform:uppercase;
+  color:rgba(255,255,255,0.4);text-decoration:none;white-space:nowrap;padding:6px 4px;}
+.nav-btn{background:none;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);
+  width:28px;height:28px;border-radius:6px;font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s;}
+.nav-btn:disabled{opacity:0.2;cursor:default;}
+.nav-btn:not(:disabled):hover{border-color:var(--gold);color:var(--gold);}
+.topbar-center{flex:1;text-align:center;min-width:0;overflow:hidden;}
+#topLabel{font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);opacity:0.8;}
+#topTitle{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:300;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;}
+.day-counter{font-size:10px;color:rgba(255,255,255,0.3);white-space:nowrap;flex-shrink:0;}
+
+#map{flex:1;min-height:0;z-index:1;}
+
+.sheet{flex-shrink:0;background:#161412;border-top:1px solid rgba(255,255,255,0.08);
+  overflow-y:auto;scrollbar-width:none;max-height:44vh;}
+.sheet::-webkit-scrollbar{display:none;}
+.handle{width:34px;height:3px;background:rgba(255,255,255,0.12);border-radius:2px;margin:9px auto 0;}
+
+.route-row{display:flex;align-items:center;padding:10px 14px 6px;gap:0;}
+.route-pt{flex:1;}
+.route-pt .lbl{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;opacity:0.35;}
+.route-pt .city{font-family:'Cormorant Garamond',serif;font-size:16px;line-height:1.1;}
+.route-pt.right{text-align:right;}
+.arrow{color:var(--blue);padding:0 8px;opacity:0.6;font-size:14px;}
+.meta-row{display:flex;gap:10px;padding:0 14px 9px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.meta-item{font-size:11px;color:rgba(255,255,255,0.35);display:flex;align-items:center;gap:4px;}
+.meta-item b{color:rgba(255,255,255,0.7);font-weight:400;}
+
+.gmap-btn{display:flex;align-items:center;gap:6px;margin:8px 14px 0;
+  padding:7px 12px;border-radius:7px;border:1px solid rgba(201,169,110,0.25);
+  background:rgba(201,169,110,0.06);color:var(--gold);font-size:11px;
+  text-decoration:none;letter-spacing:0.04em;}
+.gmap-btn:hover{background:rgba(201,169,110,0.12);}
+
+.stops{padding:6px 0 14px;}
+.stop{display:flex;gap:10px;padding:8px 14px;align-items:flex-start;}
+.stop-line{display:flex;flex-direction:column;align-items:center;padding-top:3px;flex-shrink:0;}
+.dot{width:9px;height:9px;border-radius:50%;border:2px solid;flex-shrink:0;}
+.dot.start{background:var(--green);border-color:var(--green);}
+.dot.via{background:transparent;border-color:var(--gold);}
+.dot.end{background:var(--red);border-color:var(--red);}
+.connector{width:1px;flex:1;min-height:18px;background:rgba(255,255,255,0.08);margin:2px 0;}
+.stop-info{flex:1;min-width:0;}
+.stop-name{font-size:13px;color:rgba(255,255,255,0.85);line-height:1.3;}
+.stop-name strong{font-weight:500;}
+.stop-sub{font-size:10.5px;color:rgba(255,255,255,0.32);margin-top:1px;font-style:italic;}
+.tag{display:inline-flex;align-items:center;gap:3px;margin-top:3px;
+  font-size:9px;letter-spacing:0.06em;text-transform:uppercase;
+  padding:2px 7px;border-radius:10px;border:1px solid;}
+.tag-drive{border-color:rgba(123,168,201,0.35);color:var(--blue);}
+.tag-explore{border-color:rgba(201,169,110,0.35);color:var(--gold);}
+.tag-hike{border-color:rgba(78,201,176,0.35);color:var(--green);}
+.tag-checkin{border-color:rgba(192,96,74,0.35);color:var(--red);}
+.tag-eat{border-color:rgba(232,147,90,0.35);color:#E8935A;}
+.tag-arrive{border-color:rgba(123,168,201,0.35);color:var(--blue);}
+.stop-time{font-size:10px;color:var(--gold);white-space:nowrap;padding-top:2px;flex-shrink:0;}
+
+/* Leaflet dark theme overrides */
+.leaflet-control-attribution{background:rgba(0,0,0,0.5)!important;color:rgba(255,255,255,0.3)!important;font-size:8px!important;}
+.leaflet-control-attribution a{color:rgba(255,255,255,0.4)!important;}
+.leaflet-bar{border:1px solid rgba(255,255,255,0.1)!important;}
+.leaflet-bar a{background:#1a1816!important;color:rgba(255,255,255,0.7)!important;border-bottom:1px solid rgba(255,255,255,0.08)!important;}
+.leaflet-bar a:hover{background:#222!important;color:#fff!important;}
+.mlabel{background:#1a1816;color:rgba(255,255,255,0.85);font-family:'DM Sans',sans-serif;
+  font-size:9px;padding:2px 7px;border-radius:3px;white-space:nowrap;
+  border:1px solid rgba(255,255,255,0.1);box-shadow:0 2px 6px rgba(0,0,0,0.5);
+  margin-top:3px;display:block;}
+
+.error-msg{padding:20px;text-align:center;color:rgba(255,255,255,0.4);font-size:12px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="italy-plan.html" class="back">← กลับ</a>
+  <button class="nav-btn" id="prevBtn">‹</button>
+  <div class="topbar-center">
+    <div id="topLabel"></div>
+    <div id="topTitle"></div>
+  </div>
+  <button class="nav-btn" id="nextBtn">›</button>
+  <div class="day-counter" id="dayCounter"></div>
+</div>
+
+<div id="map"></div>
+
+<div class="sheet">
+  <div class="handle"></div>
+  <div id="sheetContent"></div>
+</div>
+
+<script>
+// ── All code runs after DOM + Leaflet are fully ready ──
+document.addEventListener('DOMContentLoaded', function () {
+
+  // Safety check
+  if (typeof L === 'undefined') {
+    document.getElementById('map').innerHTML =
+      '<div class="error-msg">⚠️ ไม่สามารถโหลดแผนที่ได้<br>กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต</div>';
+    return;
+  }
+
+  // ─────────────────────────────────────────────
+  // DAY DATA
+  // ─────────────────────────────────────────────
+  var DAYS = [
+    // d=0  May 18
+    { label:'จ. 18 พ.ค.', title:'เดินทางถึง Lake Como', accent:'#3A7CA5', type:'drive',
+      from:'Milan Malpensa (MXP)', to:'Ossuccio, Como',
+      stops:[
+        { ll:[45.6306,8.7231],  name:'Milan Malpensa (MXP)',   sub:'รับรถเช่า · เริ่มต้นการเดินทาง',           time:'~14:00', tag:'arrive',  dot:'start' },
+        { ll:[45.8080,9.0852],  name:'Como',                   sub:'ผ่านตัวเมือง Como',                        time:'~15:30', tag:'drive',   dot:'via'   },
+        { ll:[45.9516,9.1652],  name:'Ossuccio · ที่พัก',     sub:'เช็คอิน Entire rental unit (Airbnb)',       time:'~16:00', tag:'checkin', dot:'end'   },
+    ]},
+    // d=1  May 19
+    { label:'อ. 19 พ.ค.', title:'เที่ยว Lake Como', accent:'#3A7CA5', type:'explore',
+      stops:[
+        { ll:[45.9516,9.1652],  name:'Ossuccio · ที่พัก',     sub:'ออกจากที่พัก',                             time:'เช้า',   tag:'explore', dot:'start' },
+        { ll:[45.9599,9.1513],  name:'Villa del Balbianello',  sub:'วิลล่าริมทะเลสาบที่สวยที่สุดของ Como',    time:'~10:00', tag:'explore', dot:'via'   },
+        { ll:[45.9875,9.2617],  name:'Bellagio',               sub:'หมู่บ้านสวยที่สุดริมทะเลสาบ',              time:'~12:30', tag:'explore', dot:'via'   },
+        { ll:[45.8080,9.0852],  name:'Como town center',       sub:'เดินเที่ยวตัวเมือง Como ยามบ่าย',          time:'~15:00', tag:'explore', dot:'end'   },
+    ]},
+    // d=2  May 20
+    { label:'พ. 20 พ.ค.', title:'Como → Genoa → Monterosso', accent:'#2E86AB', type:'drive',
+      from:'Lake Como', to:'Monterosso al Mare',
+      stops:[
+        { ll:[45.8080,9.0852],  name:'Como',                   sub:'Check out · ออกเดินทาง',                  time:'~09:00', tag:'drive',   dot:'start' },
+        { ll:[44.4056,8.9463],  name:'Genoa',                  sub:'แวะชม Porto Antico · เมืองท่าประวัติศาสตร์', time:'~11:30', tag:'explore', dot:'via'   },
+        { ll:[44.1459,9.6541],  name:'Monterosso al Mare',     sub:'เช็คอิน Villa Cristina',                   time:'~14:00', tag:'checkin', dot:'end'   },
+    ]},
+    // d=3  May 21
+    { label:'พฤ. 21 พ.ค.', title:'Day trip: Rapallo & Portofino', accent:'#2E86AB', type:'explore',
+      stops:[
+        { ll:[44.1459,9.6541],  name:'Monterosso al Mare',     sub:'ออกจากที่พัก',                             time:'~09:00', tag:'drive',   dot:'start' },
+        { ll:[44.3518,9.2310],  name:'Rapallo',                sub:'เมืองริมอ่าว · ปราสาท · ตลาดเก่า',        time:'~10:30', tag:'explore', dot:'via'   },
+        { ll:[44.3046,9.2094],  name:'Portofino',              sub:'หมู่บ้านชาวประมงสีสด · ท่าเรือสวยงาม',    time:'~12:30', tag:'explore', dot:'via'   },
+        { ll:[44.1459,9.6541],  name:'Monterosso al Mare',     sub:'กลับที่พัก',                               time:'~17:00', tag:'checkin', dot:'end'   },
+    ]},
+    // d=4  May 22
+    { label:'ศ. 22 พ.ค.', title:'Cinque Terre ครบ 5 หมู่บ้าน', accent:'#4EC9B0', type:'explore',
+      stops:[
+        { ll:[44.1459,9.6541],  name:'Monterosso al Mare',     sub:'หมู่บ้านที่ 1 · ชายหาดสวย',               time:'เช้า',   tag:'explore', dot:'start' },
+        { ll:[44.1352,9.6836],  name:'Vernazza',               sub:'หมู่บ้านที่ 2 · ท่าเรือสีสด',             time:'~10:00', tag:'explore', dot:'via'   },
+        { ll:[44.1233,9.7059],  name:'Corniglia',              sub:'หมู่บ้านที่ 3 · บนหน้าผาสูง',             time:'~11:30', tag:'explore', dot:'via'   },
+        { ll:[44.1066,9.7274],  name:'Manarola',               sub:'หมู่บ้านที่ 4 · จุดถ่ายรูปยอดนิยม',       time:'~13:30', tag:'explore', dot:'via'   },
+        { ll:[44.0999,9.7404],  name:'Riomaggiore',            sub:'หมู่บ้านที่ 5 · ทางใต้สุด',               time:'~15:30', tag:'explore', dot:'end'   },
+    ]},
+    // d=5  May 23
+    { label:'ส. 23 พ.ค.', title:'Cinque Terre → Siena', accent:'#A64B2A', type:'drive',
+      from:'Monterosso al Mare', to:'Siena / Castelnuovo',
+      stops:[
+        { ll:[44.1459,9.6541],  name:'Monterosso al Mare',     sub:'Check out Villa Cristina',                 time:'~10:00', tag:'drive',   dot:'start' },
+        { ll:[44.1029,9.8232],  name:'La Spezia',              sub:'ผ่านเมืองท่า · ขับต่อเส้น A15',           time:'~11:00', tag:'drive',   dot:'via'   },
+        { ll:[43.3186,11.3307], name:'Siena — ตัวเมือง',      sub:'Piazza del Campo · Duomo · Historic Center',time:'~16:00', tag:'explore', dot:'via'   },
+        { ll:[43.3516,11.5097], name:'Il Borghetto - La Bottega',sub:'Castelnuovo Berardenga · เช็คอิน',       time:'~18:30', tag:'checkin', dot:'end'   },
+    ]},
+    // d=6  May 24
+    { label:'อา. 24 พ.ค.', title:'Montalcino & Wine Tour', accent:'#A64B2A', type:'explore',
+      stops:[
+        { ll:[43.3516,11.5097], name:'Il Borghetto',           sub:'ออกจากที่พัก',                             time:'~09:00', tag:'drive',   dot:'start' },
+        { ll:[43.0585,11.4893], name:'Montalcino',             sub:'Fortezza · วิวทุ่งทัสคานี',                time:'~10:30', tag:'explore', dot:'via'   },
+        { ll:[43.0200,11.5200], name:'Brunello Wine Estate',   sub:'ทัวร์ไร่องุ่น Brunello di Montalcino',     time:'~13:00', tag:'eat',     dot:'via'   },
+        { ll:[43.3516,11.5097], name:'Il Borghetto',           sub:'กลับที่พัก',                               time:'~18:00', tag:'checkin', dot:'end'   },
+    ]},
+    // d=7  May 25
+    { label:'จ. 25 พ.ค.', title:'พักหรือเที่ยว Castelnuovo', accent:'#A64B2A', type:'explore',
+      stops:[
+        { ll:[43.3516,11.5097], name:'Il Borghetto',           sub:'วันพักผ่อน / เตรียมตัว',                  time:'เช้า',   tag:'explore', dot:'start' },
+        { ll:[43.3186,11.3307], name:'Siena',                  sub:'เดินเที่ยวเพิ่มเติมหรือช้อปปิ้ง',          time:'~11:00', tag:'explore', dot:'via'   },
+        { ll:[43.3516,11.5097], name:'Il Borghetto',           sub:'กลับที่พักช่วงเย็น',                       time:'~17:00', tag:'checkin', dot:'end'   },
+    ]},
+    // d=8  May 26
+    { label:'อ. 26 พ.ค.', title:'Civita di Bagnoregio → Florence', accent:'#8C3A2A', type:'drive',
+      from:'Castelnuovo', to:'Florence',
+      stops:[
+        { ll:[43.3516,11.5097], name:'Il Borghetto',           sub:'Check out (11:00)',                         time:'~11:00', tag:'drive',   dot:'start' },
+        { ll:[42.6278,12.1134], name:'Civita di Bagnoregio',   sub:'"เมืองที่กำลังจะตาย" บนโขดหิน',           time:'~13:00', tag:'explore', dot:'via'   },
+        { ll:[43.7696,11.2558], name:'Florence',               sub:'เช็คอิน A casa dei nonni 35',              time:'~17:30', tag:'checkin', dot:'end'   },
+    ]},
+    // d=9  May 27
+    { label:'พ. 27 พ.ค.', title:'Florence → Bologna → Venice', accent:'#553C7B', type:'drive',
+      from:'Florence', to:'Venice',
+      stops:[
+        { ll:[43.7696,11.2558], name:'Florence',               sub:'เที่ยวช่วงเช้า · Check out 10:00',         time:'~10:00', tag:'explore', dot:'start' },
+        { ll:[44.4949,11.3426], name:'Bologna',                sub:'Due Torri · เมืองอาหารชื่อดัง',            time:'~12:00', tag:'explore', dot:'via'   },
+        { ll:[45.4408,12.3155], name:'Venice',                 sub:'เช็คอิน hu Venezia · เที่ยวตอนเย็น',       time:'~15:00', tag:'checkin', dot:'end'   },
+    ]},
+    // d=10  May 28
+    { label:'พฤ. 28 พ.ค.', title:"Venice → Cortina d'Ampezzo", accent:'#3A6B47', type:'drive',
+      from:'Venice', to:"Cortina d'Ampezzo",
+      stops:[
+        { ll:[45.4408,12.3155], name:'Venice',                 sub:'เที่ยว Venice เก็บตกช่วงเช้า',             time:'เช้า',   tag:'explore', dot:'start' },
+        { ll:[45.8600,12.2020], name:'Belluno',                sub:'ผ่านเมืองเชิงเขา · ประตูสู่ Dolomites',    time:'~12:00', tag:'drive',   dot:'via'   },
+        { ll:[46.5403,12.1357], name:"Cortina d'Ampezzo",      sub:'เที่ยวตัวเมือง · เช็คอิน Piccolo Chalet',  time:'~15:00', tag:'checkin', dot:'end'   },
+    ]},
+    // d=11  May 29
+    { label:'ศ. 29 พ.ค.', title:'Tre Cime di Lavaredo', accent:'#3A6B47', type:'explore',
+      stops:[
+        { ll:[46.5403,12.1357], name:"Cortina d'Ampezzo",      sub:'ออกแต่เช้า — แนะนำก่อน 08:00',             time:'~07:30', tag:'drive',   dot:'start' },
+        { ll:[46.5836,12.2594], name:'Lake Misurina',           sub:'ทะเลสาบสะท้อนภูเขา — แวะถ่ายรูป',         time:'~09:00', tag:'explore', dot:'via'   },
+        { ll:[46.6164,12.3022], name:'Tre Cime di Lavaredo',    sub:'เดินรอบสามเส้าหิน icon ของ Dolomites (~3hr)',time:'~10:00',tag:'hike',    dot:'via'   },
+        { ll:[46.5403,12.1357], name:"Cortina d'Ampezzo",      sub:'กลับที่พัก',                               time:'~15:30', tag:'checkin', dot:'end'   },
+    ]},
+    // d=12  May 30
+    { label:'ส. 30 พ.ค.', title:'Lake Misurina & Cadini', accent:'#3A6B47', type:'explore',
+      stops:[
+        { ll:[46.5403,12.1357], name:"Cortina d'Ampezzo",      sub:'ออกจากที่พัก',                             time:'~08:30', tag:'drive',   dot:'start' },
+        { ll:[46.5836,12.2594], name:'Lake Misurina',           sub:'ทะเลสาบวิว Tre Cime',                      time:'~09:30', tag:'explore', dot:'via'   },
+        { ll:[46.6000,12.3050], name:'Cadini di Misurina',      sub:'หินแหลมสูง วิวอลัง — เดินขึ้น ~1.5hr',    time:'~11:00', tag:'hike',    dot:'via'   },
+        { ll:[46.5403,12.1357], name:"Cortina d'Ampezzo",      sub:'กลับที่พัก',                               time:'~15:00', tag:'checkin', dot:'end'   },
+    ]},
+    // d=13  May 31
+    { label:'อา. 31 พ.ค.', title:'Lake Braies & Hike Lake Sorapis', accent:'#3A6B47', type:'explore',
+      stops:[
+        { ll:[46.5403,12.1357], name:"Cortina d'Ampezzo",      sub:'ออกแต่เช้า — Lake Braies นิยมมาก',         time:'~07:00', tag:'drive',   dot:'start' },
+        { ll:[46.6941,12.0854], name:'Lake Braies',             sub:'ทะเลสาบสีเขียวมรกต — เช่าเรือได้',         time:'~09:00', tag:'explore', dot:'via'   },
+        { ll:[46.5118,12.2214], name:'Lake Sorapis',            sub:'เดินป่า ~4hr return · ทะเลสาบสีฟ้าเทอร์ควอยซ์',time:'~12:30',tag:'hike',dot:'end'},
+    ]},
+    // d=14  Jun 1
+    { label:'จ. 1 มิ.ย.', title:"Cinque Torri → Ortisei", accent:'#2E5A3A', type:'drive',
+      from:'Cortina', to:'Ortisei',
+      stops:[
+        { ll:[46.5403,12.1357], name:"Cortina d'Ampezzo",      sub:'Check out Chalet',                          time:'~09:00', tag:'drive',   dot:'start' },
+        { ll:[46.5218,12.0333], name:'Cinque Torri',            sub:'หอหินห้าเสา · วิวคลาสสิกของ Dolomites',   time:'~10:00', tag:'hike',    dot:'via'   },
+        { ll:[46.5757,11.6726], name:'Ortisei (St. Ulrich)',    sub:'เช็คอิน 305a Apartments No 10',             time:'~15:00', tag:'checkin', dot:'end'   },
+    ]},
+    // d=15  Jun 2
+    { label:'อ. 2 มิ.ย.', title:'พักผ่อน / วันสำรอง', accent:'#2E5A3A', type:'explore',
+      stops:[
+        { ll:[46.5757,11.6726], name:'Ortisei town',            sub:'เดินเล่นในเมือง · ช้อปปิ้ง · ร้านอาหาร', time:'เช้า',   tag:'explore', dot:'start' },
+        { ll:[46.5640,11.6870], name:'Funivia Ortisei',         sub:'กระเช้าชมวิว (optional)',                  time:'~10:00', tag:'explore', dot:'via'   },
+        { ll:[46.5820,11.6600], name:'Val Gardena',             sub:'หุบเขา Val Gardena สวยงาม',                time:'~14:00', tag:'explore', dot:'end'   },
+    ]},
+    // d=16  Jun 3
+    { label:'พ. 3 มิ.ย.', title:'Alpe di Siusi', accent:'#2E5A3A', type:'explore',
+      stops:[
+        { ll:[46.5757,11.6726], name:'Ortisei',                 sub:'ออกจากที่พัก',                             time:'~08:30', tag:'drive',   dot:'start' },
+        { ll:[46.5402,11.6352], name:'Alpe di Siusi (Seiser Alm)',sub:'ทุ่งหญ้าบนที่สูงที่ใหญ่ที่สุดในยุโรป', time:'~10:00', tag:'explore', dot:'via'   },
+        { ll:[46.5150,11.6500], name:'Compatsch',               sub:'ชมวิว Sassolungo & Sassopiatto',            time:'~12:00', tag:'hike',    dot:'end'   },
+    ]},
+    // d=17  Jun 4
+    { label:'พฤ. 4 มิ.ย.', title:'Seceda', accent:'#2E5A3A', type:'explore',
+      stops:[
+        { ll:[46.5402,11.6352], name:'ICARO · Alpe di Siusi',   sub:'เช็คอิน / ออกเดินทาง',                    time:'~09:00', tag:'checkin', dot:'start' },
+        { ll:[46.5757,11.6726], name:'Ortisei',                 sub:'ขึ้นกระเช้าสู่ Seceda',                    time:'~10:00', tag:'drive',   dot:'via'   },
+        { ll:[46.6105,11.7071], name:'Seceda',                  sub:'สันเขาสวยที่สุดของ Val Gardena · วิว 360°',time:'~11:00', tag:'hike',    dot:'end'   },
+    ]},
+    // d=18  Jun 5
+    { label:'ศ. 5 มิ.ย.', title:'Dolomite Cinema', accent:'#2E5A3A', type:'explore',
+      stops:[
+        { ll:[46.5402,11.6352], name:'ICARO · Alpe di Siusi',   sub:'ออกจากที่พัก',                             time:'เช้า',   tag:'explore', dot:'start' },
+        { ll:[46.5500,11.6400], name:'Alpe di Siusi',           sub:'เดินเล่น · ชมวิว Dolomites',               time:'~10:00', tag:'explore', dot:'via'   },
+        { ll:[46.5402,11.6352], name:'Dolomite Cinema',         sub:'กิจกรรมยามเย็น (ตรวจสอบสถานที่อีกครั้ง)',  time:'เย็น',   tag:'explore', dot:'end'   },
+    ]},
+    // d=19  Jun 6
+    { label:'ส. 6 มิ.ย.', title:'Sassolungo', accent:'#2E5A3A', type:'explore',
+      stops:[
+        { ll:[46.5757,11.6726], name:'Ortisei · Cristallo B&B', sub:'เช็คอิน คืนสุดท้ายของ Dolomites',         time:'~09:00', tag:'checkin', dot:'start' },
+        { ll:[46.5062,11.7501], name:'Sassolungo (Langkofel)',   sub:'หมู่หินยักษ์ · เดินรอบฐาน',               time:'~10:30', tag:'hike',    dot:'via'   },
+        { ll:[46.5120,11.7300], name:'Passo Sella',             sub:'ช่องเขาชมวิว Sassolungo แบบ panorama',      time:'~13:00', tag:'explore', dot:'end'   },
+    ]},
+    // d=20  Jun 7
+    { label:'อา. 7 มิ.ย.', title:'Ortisei → Milan', accent:'#9A7B3A', type:'drive',
+      from:'Ortisei', to:'Milan',
+      stops:[
+        { ll:[46.5757,11.6726], name:'Ortisei',                 sub:'Check out · ออกเดินทาง',                   time:'~09:00', tag:'drive',   dot:'start' },
+        { ll:[46.0680,11.1195], name:'Trento',                  sub:'แวะพักทานข้าว · เมืองสวยริมแม่น้ำ Adige', time:'~11:00', tag:'eat',     dot:'via'   },
+        { ll:[45.5545,10.8951], name:'Lake Garda',              sub:'ผ่านทะเลสาบ Garda ใหญ่สุดในอิตาลี',        time:'~13:00', tag:'explore', dot:'via'   },
+        { ll:[45.4654,9.1866],  name:'Milan',                   sub:'เช็คอิน View Luxury Duomo',                 time:'~16:00', tag:'checkin', dot:'end'   },
+    ]},
+    // d=21  Jun 8
+    { label:'จ. 8 มิ.ย.', title:'เที่ยว Milan วันแรก', accent:'#9A7B3A', type:'explore',
+      stops:[
+        { ll:[45.4641,9.1919],  name:'Duomo di Milano',         sub:'มหาวิหารโกธิค · ขึ้นหลังคาชมวิว',          time:'~10:00', tag:'explore', dot:'start' },
+        { ll:[45.4703,9.1796],  name:'Castello Sforzesco',      sub:'ปราสาท Sforza กลางเมือง',                  time:'~12:00', tag:'explore', dot:'via'   },
+        { ll:[45.4728,9.1808],  name:'Parco Sempione',          sub:'สวนสาธารณะหลังปราสาท',                     time:'~13:30', tag:'explore', dot:'via'   },
+        { ll:[45.4507,9.1727],  name:'Navigli',                 sub:'ย่านคลอง · Aperitivo ยามเย็น',             time:'~17:00', tag:'eat',     dot:'end'   },
+    ]},
+    // d=22  Jun 9
+    { label:'อ. 9 มิ.ย.', title:'เที่ยว Milan วันสอง', accent:'#9A7B3A', type:'explore',
+      stops:[
+        { ll:[45.4660,9.1897],  name:'Galleria Vittorio Emanuele II',sub:'อาร์เคดช้อปปิ้งสวยที่สุดในโลก',       time:'~10:00', tag:'explore', dot:'start' },
+        { ll:[45.4659,9.1858],  name:'Teatro alla Scala',       sub:'โรงอุปรากรระดับโลก',                       time:'~11:30', tag:'explore', dot:'via'   },
+        { ll:[45.4657,9.1706],  name:'Santa Maria delle Grazie',sub:'ภาพ The Last Supper ของ da Vinci',          time:'~13:00', tag:'explore', dot:'via'   },
+        { ll:[45.4680,9.2000],  name:'Via Montenapoleone',      sub:'ช้อปปิ้ง Fashion District',                 time:'~16:00', tag:'explore', dot:'end'   },
+    ]},
+    // d=23  Jun 10
+    { label:'พ. 10 มิ.ย.', title:'เดินทางกลับบ้าน ✈️', accent:'#9A7B3A', type:'drive',
+      from:'Milan', to:'Milan Malpensa (MXP)',
+      stops:[
+        { ll:[45.4654,9.1866],  name:'Milan · View Luxury Duomo',sub:'Check out เช้า',                          time:'~08:00', tag:'drive',   dot:'start' },
+        { ll:[45.6306,8.7231],  name:'Milan Malpensa (MXP)',    sub:'คืนรถเช่า · ขึ้นเครื่องกลับบ้าน',          time:'~10:00', tag:'arrive',  dot:'end'   },
+    ]},
+  ];
+
+  // ─────────────────────────────────────────────
+  // MAP INIT
+  // ─────────────────────────────────────────────
+  var map = L.map('map', { zoomControl: false, attributionControl: true })
+              .setView([44, 11], 7);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap contributors © CARTO',
+    subdomains: 'abcd', maxZoom: 19
+  }).addTo(map);
+
+  L.control.zoom({ position: 'topright' }).addTo(map);
+
+  var routeLayer  = null;
+  var markerGroup = null;
+
+  // ─────────────────────────────────────────────
+  // CURRENT DAY from URL param
+  // ─────────────────────────────────────────────
+  var cur = parseInt(new URLSearchParams(location.search).get('d') || '0');
+  cur = Math.max(0, Math.min(DAYS.length - 1, isNaN(cur) ? 0 : cur));
+
+  // ─────────────────────────────────────────────
+  // RENDER A DAY
+  // ─────────────────────────────────────────────
+  function render(idx) {
+    cur = idx;
+    history.replaceState(null, '', '?d=' + idx);
+
+    var day = DAYS[idx];
+
+    document.getElementById('topLabel').textContent   = day.label;
+    document.getElementById('topTitle').textContent   = day.title;
+    document.getElementById('dayCounter').textContent = (idx + 1) + ' / ' + DAYS.length;
+    document.getElementById('prevBtn').disabled = idx === 0;
+    document.getElementById('nextBtn').disabled = idx === DAYS.length - 1;
+
+    // Clear old layers
+    if (routeLayer)  { map.removeLayer(routeLayer);  routeLayer  = null; }
+    if (markerGroup) { map.removeLayer(markerGroup); markerGroup = null; }
+    markerGroup = L.layerGroup().addTo(map);
+
+    // Add markers
+    var dotColors = { start: '#4EC9B0', via: '#C9A96E', end: '#C0604A' };
+    day.stops.forEach(function(s) {
+      var c  = dotColors[s.dot] || '#C9A96E';
+      var sz = s.dot === 'via' ? 8 : 11;
+      var icon = L.divIcon({
+        className: '',
+        html: '<div style="width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;' +
+              'background:' + c + ';border:2px solid #111;' +
+              'box-shadow:0 0 0 2px ' + c + '44;"></div>' +
+              '<span class="mlabel" style="border-color:' + c + '33;' +
+              'opacity:' + (s.dot === 'via' ? 0.75 : 1) + ';">' +
+              s.name.split('·')[0].trim() + '</span>',
+        iconAnchor: [0, 0],
+        iconSize: [130, 44]
+      });
+      L.marker(s.ll, { icon: icon }).addTo(markerGroup);
+    });
+
+    renderSheet(day);
+
+    if (day.type === 'drive') {
+      drawOSRM(day);
+    } else {
+      var lls = day.stops.map(function(s) { return s.ll; });
+      routeLayer = L.polyline(lls, {
+        color: day.accent || '#C9A96E', weight: 2, opacity: 0.55, dashArray: '5,9'
+      }).addTo(map);
+      map.fitBounds(L.latLngBounds(lls), { padding: [55, 55] });
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // OSRM ROUTING
+  // ─────────────────────────────────────────────
+  function drawOSRM(day) {
+    var coords = day.stops.map(function(s) { return s.ll[1] + ',' + s.ll[0]; }).join(';');
+    fetch('https://router.project-osrm.org/route/v1/driving/' + coords +
+          '?overview=full&geometries=geojson')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var route = data.routes[0];
+        routeLayer = L.geoJSON(route.geometry, {
+          style: { color: '#7BA8C9', weight: 3.5, opacity: 0.85, lineCap: 'round' }
+        }).addTo(map);
+        var pts = route.geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
+        map.fitBounds(L.latLngBounds(pts), { padding: [55, 55] });
+        var km = (route.distance / 1000).toFixed(0);
+        var h  = Math.floor(route.duration / 3600);
+        var m  = Math.floor((route.duration % 3600) / 60);
+        var dEl = document.getElementById('distVal');
+        var tEl = document.getElementById('durVal');
+        if (dEl) dEl.textContent = km + ' km';
+        if (tEl) tEl.textContent = h + 'h ' + m + 'min';
+      })
+      .catch(function() {
+        // Fallback: dashed straight polyline
+        var lls = day.stops.map(function(s) { return s.ll; });
+        routeLayer = L.polyline(lls, { color: '#7BA8C9', weight: 3, opacity: 0.6, dashArray: '6,7' }).addTo(map);
+        map.fitBounds(L.latLngBounds(lls), { padding: [55, 55] });
+      });
+  }
+
+  // ─────────────────────────────────────────────
+  // RENDER BOTTOM SHEET
+  // ─────────────────────────────────────────────
+  function renderSheet(day) {
+    var tagClass = {
+      drive:'tag-drive', explore:'tag-explore', hike:'tag-hike',
+      checkin:'tag-checkin', eat:'tag-eat', arrive:'tag-arrive'
+    };
+    var tagLabel = {
+      drive:'🚗 ขับรถ', explore:'👁 เที่ยว', hike:'🥾 เดินป่า',
+      checkin:'🏨 เช็คอิน', eat:'🍽 กิน', arrive:'✈️ เดินทาง'
+    };
+
+    var gmapPts = day.stops.map(function(s) { return s.ll[0] + ',' + s.ll[1]; }).join('/');
+    var gmapUrl = 'https://www.google.com/maps/dir/' + gmapPts;
+
+    var routeHtml = '';
+    if (day.type === 'drive') {
+      routeHtml =
+        '<div class="route-row">' +
+          '<div class="route-pt"><div class="lbl">จาก</div><div class="city">' + (day.from||'') + '</div></div>' +
+          '<div class="arrow">→</div>' +
+          '<div class="route-pt right"><div class="lbl">ถึง</div><div class="city">' + (day.to||'') + '</div></div>' +
+        '</div>' +
+        '<div class="meta-row">' +
+          '<div class="meta-item">🚗 <b id="distVal">กำลังคำนวณ...</b></div>' +
+          '<div class="meta-item">⏱ <b id="durVal">—</b></div>' +
+        '</div>';
+    }
+
+    var stopsHtml = day.stops.map(function(s, i) {
+      var isLast = i === day.stops.length - 1;
+      return '<div class="stop">' +
+        '<div class="stop-line">' +
+          '<div class="dot ' + s.dot + '"></div>' +
+          (!isLast ? '<div class="connector"></div>' : '') +
+        '</div>' +
+        '<div class="stop-info">' +
+          '<div class="stop-name"><strong>' + s.name + '</strong></div>' +
+          '<div class="stop-sub">' + s.sub + '</div>' +
+          '<span class="tag ' + (tagClass[s.tag]||'tag-explore') + '">' + (tagLabel[s.tag]||s.tag) + '</span>' +
+        '</div>' +
+        '<div class="stop-time">' + s.time + '</div>' +
+      '</div>';
+    }).join('');
+
+    document.getElementById('sheetContent').innerHTML =
+      routeHtml +
+      '<a class="gmap-btn" href="' + gmapUrl + '" target="_blank">' +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+          '<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>' +
+          '<circle cx="12" cy="9" r="2.5"/>' +
+        '</svg>' +
+        'เปิดใน Google Maps' +
+      '</a>' +
+      '<div class="stops">' + stopsHtml + '</div>';
+  }
+
+  // ─────────────────────────────────────────────
+  // NAVIGATION
+  // ─────────────────────────────────────────────
+  document.getElementById('prevBtn').addEventListener('click', function() {
+    if (cur > 0) render(cur - 1);
+  });
+  document.getElementById('nextBtn').addEventListener('click', function() {
+    if (cur < DAYS.length - 1) render(cur + 1);
+  });
+
+  // Keyboard arrow support
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowLeft'  && cur > 0)              render(cur - 1);
+    if (e.key === 'ArrowRight' && cur < DAYS.length - 1) render(cur + 1);
+  });
+
+  // Initial render
+  render(cur);
+
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>
